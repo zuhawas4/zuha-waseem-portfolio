@@ -36,9 +36,9 @@ export default function Contact() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault(); // no full page reload
 
-    // Client-side check first (same rules as the API)
+    // Client-side check first (API re-validates the same rules server-side)
     const clientResult = validateContactPayload(values);
     if (!clientResult.ok) {
       setErrors(clientResult.errors);
@@ -47,7 +47,7 @@ export default function Contact() {
     }
 
     setErrors({});
-    setStatus("loading");
+    setStatus("loading"); // shows spinner on the submit button
     setStatusMessage("");
 
     try {

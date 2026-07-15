@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateContactPayload } from "@/lib/contact-validation";
+import { sendContactAlertEmail } from "@/lib/email";
 
 /**
  * POST /api/contact
- * Accepts a contact form submission, validates it server-side,
- * and stores a new Contact row with status "Pending".
+ *
+ * 1. Re-validate every field on the server (never trust the client alone)
+ * 2. Save a Contact row with status "Pending"
+ * 3. Try to email the admin via Resend — email failure must NOT fail the request
  */
 export async function POST(request: Request) {
   try {
@@ -20,9 +23,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload =
-      body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    // Reject non-object payloads early
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: "Invalid request body." },
+        { status: 400 },
+      );
+    }
 
+    const payload = body as Record<string, unknown>;
+
+    // Server-side validation — same rules as the client, applied again here
     const result = validateContactPayload({
       name: typeof payload.name === "string" ? payload.name : "",
       email: typeof payload.email === "string" ? payload.email : "",
@@ -46,6 +57,18 @@ export async function POST(request: Request) {
         status: "Pending",
       },
     });
+
+    // Email is best-effort: the visitor still sees success if Resend fails
+    try {
+      await sendContactAlertEmail({
+        name: result.data.name,
+        email: result.data.email,
+        subject: result.data.subject,
+        message: result.data.message,
+      });
+    } catch (emailError) {
+      console.error("[api/contact] Resend email failed:", emailError);
+    }
 
     return NextResponse.json(
       {

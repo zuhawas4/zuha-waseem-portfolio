@@ -47,3 +47,17 @@ npm run db:migrate -- --name init_contact
 ```
 
 5. Start the app and submit the Contact form — rows should appear in Supabase → Table Editor → `Contact`
+
+## Phase 4 setup (Resend email alerts)
+
+1. Create an API key at [resend.com/api-keys](https://resend.com/api-keys)
+2. Add to `.env` and `.env.local`:
+
+```
+RESEND_API_KEY=re_...
+ADMIN_EMAIL=your-inbox@example.com
+RESEND_FROM_EMAIL=Portfolio Contact <onboarding@resend.dev>
+```
+
+3. With Resend's free onboarding sender, `ADMIN_EMAIL` must be the email on your Resend account.
+4. Submit the contact form — you should get an email, and the row still saves even if email fails.

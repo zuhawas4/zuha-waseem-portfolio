@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  // Keep Turbopack rooted at this project (sibling shop-co has its own lockfile)
+  // Parent folder has another lockfile (shop-co) — pin Turbopack to this app
   turbopack: {
-    root: process.cwd(),
+    root: path.resolve(__dirname),
   },
 };
 
