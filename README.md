@@ -27,6 +27,23 @@ src/
 
 ## Phases
 
-- **Phase 1** — Portfolio frontend (current)
+- **Phase 1** — Portfolio frontend
 - **Phase 2** — GitHub + Vercel deploy
-- **Phase 3+** — Supabase, Prisma, Contact API, Auth, Admin dashboard, reCAPTCHA
+- **Phase 3** — Supabase + Prisma + Contact API (current)
+- **Phase 4+** — Resend, Auth, Admin dashboard, reCAPTCHA
+
+## Phase 3 setup (database)
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Copy `.env.example` → `.env.local` and fill in:
+   - `DATABASE_URL` — Transaction pooler (port **6543**, add `?pgbouncer=true`)
+   - `DIRECT_URL` — Direct/session connection (port **5432**)
+   - Supabase URL + anon/service keys (for later phases)
+3. Also copy `DATABASE_URL` and `DIRECT_URL` into a root `.env` file (Prisma CLI reads `.env`)
+4. Run the migration:
+
+```bash
+npm run db:migrate -- --name init_contact
+```
+
+5. Start the app and submit the Contact form — rows should appear in Supabase → Table Editor → `Contact`

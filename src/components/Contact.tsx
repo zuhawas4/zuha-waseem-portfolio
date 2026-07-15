@@ -2,65 +2,28 @@
 
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-
-type FormFields = {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-};
-
-type FormErrors = Partial<Record<keyof FormFields, string>>;
+import {
+  validateContactPayload,
+  type ContactFieldErrors,
+  type ContactPayload,
+} from "@/lib/contact-validation";
 
 type SubmitStatus = "idle" | "loading" | "success" | "error";
 
-const initialValues: FormFields = {
+const initialValues: ContactPayload = {
   name: "",
   email: "",
   subject: "",
   message: "",
 };
 
-/**
- * Client-side validation helpers.
- * Server-side validation will be added in Phase 3/4 when the API is wired up.
- */
-function validate(values: FormFields): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!values.name.trim()) {
-    errors.name = "Name is required.";
-  }
-
-  if (!values.email.trim()) {
-    errors.email = "Email is required.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-    errors.email = "Please enter a valid email address.";
-  }
-
-  if (!values.subject.trim()) {
-    errors.subject = "Subject is required.";
-  }
-
-  if (!values.message.trim()) {
-    errors.message = "Message is required.";
-  } else if (values.message.trim().length < 20) {
-    errors.message = "Message must be at least 20 characters.";
-  }
-
-  return errors;
-}
-
 export default function Contact() {
-  const [values, setValues] = useState<FormFields>(initialValues);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [values, setValues] = useState<ContactPayload>(initialValues);
+  const [errors, setErrors] = useState<ContactFieldErrors>({});
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("");
 
-  const handleChange = (
-    field: keyof FormFields,
-    value: string,
-  ) => {
+  const handleChange = (field: keyof ContactPayload, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
     // Clear field error as the user types
     if (errors[field]) {
@@ -75,33 +38,52 @@ export default function Contact() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const nextErrors = validate(values);
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
+    // Client-side check first (same rules as the API)
+    const clientResult = validateContactPayload(values);
+    if (!clientResult.ok) {
+      setErrors(clientResult.errors);
       setStatus("idle");
       return;
     }
 
-    // Phase 1: simulate submit UI states.
-    // Phase 3 will replace this with a real POST to /api/contact.
+    setErrors({});
     setStatus("loading");
     setStatusMessage("");
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clientResult.data),
+      });
 
-      // Placeholder success — backend wiring comes in Phase 3
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        error?: string;
+        errors?: ContactFieldErrors;
+      };
+
+      if (!response.ok) {
+        // Show field errors from the server when present
+        if (data.errors) {
+          setErrors(data.errors);
+        }
+        setStatus("error");
+        setStatusMessage(
+          data.error ?? "Something went wrong. Please try again in a moment.",
+        );
+        return;
+      }
+
       setStatus("success");
       setStatusMessage(
-        "Thanks for reaching out! Your message is ready to send once the contact API is connected.",
+        data.message ?? "Thanks for reaching out! I'll get back to you soon.",
       );
       setValues(initialValues);
     } catch {
       setStatus("error");
-      setStatusMessage(
-        "Something went wrong. Please try again in a moment.",
-      );
+      setStatusMessage("Something went wrong. Please try again in a moment.");
     }
   };
 

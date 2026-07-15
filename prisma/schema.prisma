@@ -1,0 +1,26 @@
+// Prisma schema — defines database tables for the portfolio backend.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection (Supabase transaction pooler, port 6543) — used at runtime
+  url       = env("DATABASE_URL")
+  // Direct connection (port 5432) — used by Prisma Migrate
+  directUrl = env("DIRECT_URL")
+}
+
+/// Contact form submissions from the portfolio site
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  status    String   @default("Pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
