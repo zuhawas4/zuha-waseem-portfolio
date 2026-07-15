@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Keep Turbopack rooted at this project (sibling shop-co has its own lockfile)
+  turbopack: {
+    root: process.cwd(),
+  },
 };
 
 export default nextConfig;
