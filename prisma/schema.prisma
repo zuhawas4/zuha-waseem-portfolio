@@ -24,3 +24,22 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Admin profile linked to a Supabase Auth user (auth.users id)
+model Profile {
+  id         String   @id @default(uuid())
+  authUserId String   @unique
+  name       String
+  email      String
+  role       String   @default("Admin")
+  createdAt  DateTime @default(now())
+}
+
+/// Tracks login attempts by IP for rate limiting (Phase 6)
+model LoginAttempt {
+  id            String    @id @default(uuid())
+  ipAddress     String    @unique
+  attempts      Int       @default(0)
+  lastAttemptAt DateTime  @default(now())
+  blockedUntil  DateTime?
+}

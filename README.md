@@ -1,6 +1,8 @@
 # Zuha Waseem — Portfolio
 
-Personal portfolio site built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**.
+Personal portfolio with Contact API, Resend alerts, Supabase Auth admin dashboard, and reCAPTCHA-protected login.
+
+**Stack:** Next.js (App Router) · TypeScript · Tailwind · Prisma · Supabase · Resend · reCAPTCHA v3
 
 ## Run locally
 
@@ -12,52 +14,66 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Customize content
+## Environment
 
-Edit `src/data/content.ts` for name, bio, skills, projects, timeline, and social links.
+Copy `.env.example` → `.env` and `.env.local`, then fill in Supabase, Resend, admin, and reCAPTCHA values.
+
+## Database migrations
+
+```bash
+# Apply schema (Contact, Profile, LoginAttempt)
+npx prisma migrate deploy
+# or during development:
+npx prisma migrate dev
+npx prisma generate
+```
+
+## Seed the Admin account
+
+1. In Supabase → **Authentication** → enable **Email** provider.
+2. Set in `.env` / `.env.local`:
+
+```
+ADMIN_EMAIL=your@email.com
+ADMIN_PASSWORD=at-least-8-chars
+ADMIN_NAME=Zuha Waseem
+```
+
+3. Run:
+
+```bash
+npm run seed:admin
+```
+
+4. Open `/login` and sign in.
+
+## Admin features
+
+| Route | Purpose |
+|-------|---------|
+| `/login` | Admin login (reCAPTCHA + rate limit) |
+| `/dashboard` | Stats + recent contacts |
+| `/dashboard/contacts` | Full list + status dropdown |
+| `PATCH /api/contacts/:id/status` | Update status (admin only) |
+
+Statuses: `Pending` · `Done` · `Completed` · `Resolved`
 
 ## Project structure
 
 ```
 src/
-  app/           # App Router pages + global styles
-  components/    # Hero, About, Skills, Projects, Experience, Contact, Footer, Navbar
-  data/          # Portfolio copy and data
+  app/
+    api/contact          # public contact form API
+    api/auth/login       # login + reCAPTCHA + rate limit
+    api/contacts/[id]/status
+    login/
+    dashboard/           # protected admin UI
+  components/            # portfolio sections + admin UI
+  lib/                   # prisma, supabase, email, rate-limit, recaptcha
+scripts/seed-admin.ts
+prisma/
 ```
 
-## Phases
+## reCAPTCHA (optional locally)
 
-- **Phase 1** — Portfolio frontend
-- **Phase 2** — GitHub + Vercel deploy
-- **Phase 3** — Supabase + Prisma + Contact API (current)
-- **Phase 4+** — Resend, Auth, Admin dashboard, reCAPTCHA
-
-## Phase 3 setup (database)
-
-1. Create a free project at [supabase.com](https://supabase.com)
-2. Copy `.env.example` → `.env.local` and fill in:
-   - `DATABASE_URL` — Transaction pooler (port **6543**, add `?pgbouncer=true`)
-   - `DIRECT_URL` — Direct/session connection (port **5432**)
-   - Supabase URL + anon/service keys (for later phases)
-3. Also copy `DATABASE_URL` and `DIRECT_URL` into a root `.env` file (Prisma CLI reads `.env`)
-4. Run the migration:
-
-```bash
-npm run db:migrate -- --name init_contact
-```
-
-5. Start the app and submit the Contact form — rows should appear in Supabase → Table Editor → `Contact`
-
-## Phase 4 setup (Resend email alerts)
-
-1. Create an API key at [resend.com/api-keys](https://resend.com/api-keys)
-2. Add to `.env` and `.env.local`:
-
-```
-RESEND_API_KEY=re_...
-ADMIN_EMAIL=your-inbox@example.com
-RESEND_FROM_EMAIL=Portfolio Contact <onboarding@resend.dev>
-```
-
-3. With Resend's free onboarding sender, `ADMIN_EMAIL` must be the email on your Resend account.
-4. Submit the contact form — you should get an email, and the row still saves even if email fails.
+Without `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY`, login still works (verification is skipped with a warning). For production, register v3 keys at https://www.google.com/recaptcha/admin and add them to Vercel env.
